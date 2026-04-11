@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Starry Shelf</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="header-text">
+                    <h1>The Starry Shelf</h1>
+                    <p>Track your anime, manga, light novels, and books</p>
+                </div>
+                <button id="add-new-btn" class="btn-primary">Add New</button>
+            </div>
+        </header>
+
+        <section class="list-section">
+            <div class="filters">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="active">Active</button>
+                <button class="filter-btn" data-filter="completed">Completed</button>
+            </div>
+            <div id="items-list" class="items-grid">
+                <!-- Items will be injected here -->
+            </div>
+        </section>
+    </div>
+
+    <!-- The Modal -->
+    <div id="item-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="close-modal">&times;</span>
+            <h2 id="modal-title">Add New Item</h2>
+            <form id="item-form">
+                <input type="hidden" id="item-id">
+
+                <div class="form-group">
+                    <input type="text" id="item-title" placeholder="Name" autocomplete="off" required>
+                </div>
+
+                <div class="form-group row">
+                    <select id="item-type" required>
+                        <option value="" disabled selected>Select Type</option>
+                        <option value="Anime">Anime</option>
+                        <option value="Manga">Manga</option>
+                        <option value="Light Novel">Light Novel</option>
+                        <option value="Book">Book</option>
+                    </select>
+                </div>
+
+                <div class="form-group row">
+                    <select id="item-month" required>
+                        <option value="" disabled selected>Month</option>
+                        <option value="Jan">Jan</option>
+                        <option value="Feb">Feb</option>
+                        <option value="Mar">Mar</option>
+                        <option value="Apr">Apr</option>
+                        <option value="May">May</option>
+                        <option value="Jun">Jun</option>
+                        <option value="Jul">Jul</option>
+                        <option value="Aug">Aug</option>
+                        <option value="Sep">Sep</option>
+                        <option value="Oct">Oct</option>
+                        <option value="Nov">Nov</option>
+                        <option value="Dec">Dec</option>
+                    </select>
+                    <input type="number" id="item-year" placeholder="Year" min="1800" max="2100" autocomplete="off"
+                        required>
+                </div>
+
+                <div class="form-group">
+                    <input type="url" id="item-image" placeholder="Cover Image URL (Optional)" autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                    <label id="progress-label"
+                        style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 0.3rem; display: block; padding-left: 0.2rem;">Progress</label>
+                    <input type="number" id="item-progress" placeholder="0" min="0" autocomplete="off" required>
+                </div>
+
+                <div class="form-group" id="status-group" style="display: none;">
+                    <label
+                        style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 0.3rem; display: block; padding-left: 0.2rem;">Status</label>
+                    <select id="item-status">
+                        <option value="false">Active</option>
+                        <option value="true">Completed</option>
+                    </select>
+                </div>
+
+                <div class="form-group row" style="justify-content: flex-end; margin-top: 1.5rem;">
+                    <button type="submit" class="btn-primary">Save Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
