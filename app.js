@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const type = typeSelect.value;
         switch(type) {
             case 'Anime': progressLabelObj.textContent = 'Episodes Completed'; break;
-            case 'Manga': 
+            case 'Manga': progressLabelObj.textContent = 'Chapters Completed'; break;
             case 'Light Novel': progressLabelObj.textContent = 'Volumes Completed'; break;
             case 'Book': progressLabelObj.textContent = 'Pages Read'; break;
             default: progressLabelObj.textContent = 'Progress';
@@ -281,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function getProgressLabel(type) {
         switch(type) {
             case 'Anime': return 'Episodes';
-            case 'Manga': return 'Volumes';
+            case 'Manga': return 'Chapters';
             case 'Light Novel': return 'Volumes';
             case 'Book': return 'Pages';
             default: return 'Progress';
