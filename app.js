@@ -8,13 +8,13 @@ const firebaseConfig = {
   measurementId: "G-3KBWJGEBMC"
 };
 
-// Initialize Firebase using Compat Library
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const itemsCollection = db.collection('trackerItems');
 
 let items = [];
-let currentFilter = 'all';
+let currentTab = 'Books';
+let chartInstance = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     const addNewBtn = document.getElementById('add-new-btn');
@@ -30,13 +30,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const yearInput = document.getElementById('item-year');
     const imageInput = document.getElementById('item-image');
     const progressInput = document.getElementById('item-progress');
+    const durationValInput = document.getElementById('item-duration-val');
+    const durationUnitSelect = document.getElementById('item-duration-unit');
+    const ratingInput = document.getElementById('item-rating');
     const statusSelect = document.getElementById('item-status');
     const statusGroup = document.getElementById('status-group');
     const modalTitle = document.getElementById('modal-title');
     const progressLabelObj = document.getElementById('progress-label');
+    const stars = document.querySelectorAll('#star-rating span');
 
     const itemsList = document.getElementById('items-list');
-    const filterBtns = document.querySelectorAll('.filter-btn');
+    const statsView = document.getElementById('stats-view');
+    const controlsBar = document.getElementById('controls-bar');
+    const sortSelect = document.getElementById('sort-select');
+    const filterStatusSelect = document.getElementById('filter-status-select');
+    const filterCategorySelect = document.getElementById('filter-category-select');
+    const tabBtns = document.querySelectorAll('.tab-btn');
 
     // Subscribe to realtime updates
     itemsCollection.onSnapshot((snapshot) => {
@@ -45,31 +54,60 @@ document.addEventListener('DOMContentLoaded', () => {
             items.push({ id: doc.id, ...doc.data() });
         });
         
-        // Sort items by creation time, newest first
-        items.sort((a, b) => b.createdAt - a.createdAt);
-        
+        // Map old data to new schema for backward compatibility display
+        items = items.map(item => {
+            if (item.type === 'Book') item.type = 'Books';
+            if (item.type === 'Light Novel') item.type = 'Light Novels';
+            return item;
+        });
+
         renderItems();
+        if (currentTab === 'Stats') renderStats();
     });
 
-    // Dynamic Label Logic
-    typeSelect.addEventListener('change', () => {
-        const type = typeSelect.value;
+    function getProgressLabel(type) {
         switch(type) {
-            case 'Anime': progressLabelObj.textContent = 'Episodes Completed'; break;
-            case 'Manga': progressLabelObj.textContent = 'Chapters Completed'; break;
-            case 'Light Novel': progressLabelObj.textContent = 'Volumes Completed'; break;
-            case 'Book': progressLabelObj.textContent = 'Pages Read'; break;
-            default: progressLabelObj.textContent = 'Progress';
+            case 'Books': return 'Pages';
+            case 'Manga': 
+            case 'Light Novels': return 'Volumes';
+            case 'Anime': 
+            case 'TV Shows': 
+            case 'Podcasts': return 'Episodes';
+            default: return 'Progress';
         }
+    }
+
+    typeSelect.addEventListener('change', () => {
+        progressLabelObj.textContent = getProgressLabel(typeSelect.value);
     });
 
-    // Modal behavior
+    // Star rating logic
+    stars.forEach(star => {
+        star.addEventListener('click', (e) => {
+            const val = parseInt(e.target.dataset.value);
+            ratingInput.value = val;
+            updateStarsUI(val);
+        });
+    });
+
+    function updateStarsUI(val) {
+        stars.forEach(s => {
+            if (parseInt(s.dataset.value) <= val) {
+                s.classList.add('star-active');
+            } else {
+                s.classList.remove('star-active');
+            }
+        });
+    }
+
     function openModalForAdd() {
         form.reset();
         itemIdInput.value = '';
         statusGroup.style.display = 'none';
         modalTitle.textContent = 'Add New Item';
-        progressLabelObj.textContent = 'Progress'; // Reset label
+        progressLabelObj.textContent = 'Progress';
+        ratingInput.value = 0;
+        updateStarsUI(0);
         modal.classList.add('show');
     }
 
@@ -79,15 +117,18 @@ document.addEventListener('DOMContentLoaded', () => {
         
         itemIdInput.value = item.id;
         titleInput.value = item.title;
-        typeSelect.value = item.type;
+        typeSelect.value = item.type || '';
         monthSelect.value = item.month || '';
         yearInput.value = item.year || new Date().getFullYear();
         imageInput.value = item.imageUrl || '';
         progressInput.value = item.progress || 0;
+        durationValInput.value = item.durationVal || '';
+        durationUnitSelect.value = item.durationUnit || 'days';
+        ratingInput.value = item.rating || 0;
+        updateStarsUI(item.rating || 0);
         statusSelect.value = item.completed ? 'true' : 'false';
         
-        // Trigger manual change to update progress label text
-        typeSelect.dispatchEvent(new Event('change'));
+        if(typeSelect.value) typeSelect.dispatchEvent(new Event('change'));
         
         statusGroup.style.display = 'block';
         modalTitle.textContent = 'Edit Item';
@@ -102,19 +143,80 @@ document.addEventListener('DOMContentLoaded', () => {
     closeModalBtn.addEventListener('click', closeModal);
     
     window.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            closeModal();
-        }
+        if (e.target === modal) closeModal();
     });
+
+    // Tabs logic
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            tabBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentTab = btn.dataset.tab;
+            
+            if (currentTab === 'Stats') {
+                itemsList.style.display = 'none';
+                controlsBar.style.display = 'none';
+                statsView.style.display = 'block';
+                renderStats();
+            } else {
+                itemsList.style.display = 'grid';
+                controlsBar.style.display = 'flex';
+                statsView.style.display = 'none';
+                
+                if (currentTab === 'Status') {
+                    filterCategorySelect.style.display = 'block';
+                } else {
+                    filterCategorySelect.style.display = 'none';
+                }
+                
+                renderItems();
+            }
+        });
+    });
+
+    // Sort and Filter logic
+    sortSelect.addEventListener('change', renderItems);
+    filterStatusSelect.addEventListener('change', renderItems);
+    filterCategorySelect.addEventListener('change', renderItems);
 
     function renderItems() {
         itemsList.innerHTML = '';
         
-        let filteredItems = items;
-        if (currentFilter === 'active') {
-            filteredItems = items.filter(item => !item.completed);
-        } else if (currentFilter === 'completed') {
-            filteredItems = items.filter(item => item.completed);
+        let filteredItems = [...items];
+        
+        // Tab Filtering
+        if (currentTab === 'Shows') {
+            filteredItems = filteredItems.filter(i => i.type === 'Anime' || i.type === 'TV Shows');
+        } else if (currentTab !== 'Status' && currentTab !== 'Stats' && currentTab !== 'all') {
+            filteredItems = filteredItems.filter(i => i.type === currentTab);
+        }
+
+        // Status filter from controls
+        const statusVal = filterStatusSelect.value;
+        if (statusVal === 'active') {
+            filteredItems = filteredItems.filter(i => !i.completed);
+        } else if (statusVal === 'completed') {
+            filteredItems = filteredItems.filter(i => i.completed);
+        }
+
+        // Category filter from controls (only active in Status tab usually)
+        if (currentTab === 'Status') {
+            const catVal = filterCategorySelect.value;
+            if (catVal !== 'all') {
+                filteredItems = filteredItems.filter(i => i.type === catVal);
+            }
+        }
+
+        // Sorting
+        const sortVal = sortSelect.value;
+        if (sortVal === 'newest') {
+            filteredItems.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        } else if (sortVal === 'oldest') {
+            filteredItems.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+        } else if (sortVal === 'year-desc') {
+            filteredItems.sort((a, b) => (b.year || 0) - (a.year || 0));
+        } else if (sortVal === 'year-asc') {
+            filteredItems.sort((a, b) => (a.year || 0) - (b.year || 0));
         }
 
         if (filteredItems.length === 0) {
@@ -133,15 +235,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const progressLabel = getProgressLabel(item.type);
             const tagClass = item.type ? item.type.replace(/\s+/g, '').toLowerCase() : '';
 
-            // Render cover image or placeholder
             const coverHTML = item.imageUrl 
                 ? `<div class="card-cover" style="background-image: url('${escapeHTML(item.imageUrl)}')"></div>`
                 : `<div class="card-cover placeholder">${escapeHTML(item.title).charAt(0).toUpperCase()}</div>`;
+
+            // Render Stars
+            let starsHTML = '';
+            if (item.rating > 0) {
+                starsHTML = `<div class="item-rating">${'&#9733;'.repeat(item.rating)}${'&#9734;'.repeat(5 - item.rating)}</div>`;
+            }
+
+            // Render Duration
+            let durationHTML = '';
+            if (item.durationVal) {
+                durationHTML = `<div class="item-duration">Time Taken: ${item.durationVal} ${item.durationUnit}</div>`;
+            }
 
             card.innerHTML = `
                 ${coverHTML}
                 <div class="card-content">
                     <div class="item-title">${escapeHTML(item.title)}</div>
+                    ${starsHTML}
                     
                     <div class="item-meta">
                         <span class="tag ${tagClass}">${item.type}</span>
@@ -151,6 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     <div class="progress-info">
                         ${progressLabel}: <b id="progress-val-${item.id}">${item.progress || 0}</b>
+                        ${durationHTML}
                     </div>
                     
                     <div class="item-actions">
@@ -236,68 +351,130 @@ document.addEventListener('DOMContentLoaded', () => {
         const year = parseInt(yearInput.value) || new Date().getFullYear();
         const imageUrl = imageInput.value.trim();
         const progress = parseInt(progressInput.value) || 0;
+        const durationVal = parseInt(durationValInput.value) || null;
+        const durationUnit = durationUnitSelect.value;
+        const rating = parseInt(ratingInput.value) || 0;
+        const completed = statusSelect.value === 'true';
         
         if (!title || !type) return;
 
+        if (completed && !durationVal) {
+            alert('Please enter the Time Taken for completed items.');
+            return;
+        }
+
         if (id) {
-            // Update existing
-            const completed = statusSelect.value === 'true';
             await itemsCollection.doc(id).update({
-                title,
-                type,
-                month,
-                year,
-                imageUrl,
-                progress,
-                completed
+                title, type, month, year, imageUrl, progress, 
+                durationVal, durationUnit, rating, completed
             });
         } else {
-            // Add new
             const newItem = {
-                title,
-                type,
-                month,
-                year,
-                imageUrl,
-                progress,
-                completed: false,
+                title, type, month, year, imageUrl, progress,
+                durationVal, durationUnit, rating,
+                completed: false, // New items default to active unless they immediately edit status. Wait, status isn't shown on Add.
                 createdAt: Date.now()
             };
+            // If they can set completed on add, we use completed, but it's hidden on add.
             await itemsCollection.add(newItem);
         }
         
         closeModal();
     });
 
-    filterBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            filterBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            currentFilter = btn.dataset.filter;
-            renderItems();
+    function renderStats() {
+        const ctx = document.getElementById('progressChart');
+        
+        const progressByMonth = {};
+        items.forEach(item => {
+            if (!item.month || !item.year) return;
+            const key = `${item.month} ${item.year}`;
+            progressByMonth[key] = (progressByMonth[key] || 0) + (item.progress || 0);
         });
-    });
 
-    function getProgressLabel(type) {
-        switch(type) {
-            case 'Anime': return 'Episodes';
-            case 'Manga': return 'Chapters';
-            case 'Light Novel': return 'Volumes';
-            case 'Book': return 'Pages';
-            default: return 'Progress';
+        const monthsOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const sortedKeys = Object.keys(progressByMonth).sort((a, b) => {
+            const [mA, yA] = a.split(' ');
+            const [mB, yB] = b.split(' ');
+            if (yA !== yB) return parseInt(yA) - parseInt(yB);
+            return monthsOrder.indexOf(mA) - monthsOrder.indexOf(mB);
+        });
+
+        const labels = sortedKeys;
+        const data = sortedKeys.map(k => progressByMonth[k]);
+
+        if (chartInstance) chartInstance.destroy();
+        
+        if(ctx) {
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels.length ? labels : ['No Data'],
+                    datasets: [{
+                        label: 'Total Progress Activity',
+                        data: data.length ? data : [0],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#e2e8f0' } }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                    }
+                }
+            });
+        }
+
+        const heatmap = document.getElementById('heatmap');
+        if (heatmap) {
+            heatmap.innerHTML = '';
+            const cells = 365;
+            const activityCount = new Array(cells).fill(0);
+            const now = Date.now();
+            const dayMs = 1000 * 60 * 60 * 24;
+            
+            items.forEach(item => {
+                if (!item.createdAt) return;
+                const diffDays = Math.floor((now - item.createdAt) / dayMs);
+                if (diffDays >= 0 && diffDays < cells) {
+                    const index = cells - 1 - diffDays;
+                    // using progress to determine activity intensity
+                    activityCount[index] += (item.progress || 1);
+                }
+            });
+
+            for (let i = 0; i < cells; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'heatmap-cell';
+                let level = 0;
+                const count = activityCount[i];
+                if (count > 0 && count <= 5) level = 1;
+                else if (count > 5 && count <= 20) level = 2;
+                else if (count > 20 && count <= 50) level = 3;
+                else if (count > 50) level = 4;
+                
+                cell.setAttribute('data-level', level);
+                if (count > 0) cell.title = `Activity level: ${count}`;
+                heatmap.appendChild(cell);
+            }
         }
     }
 
     function escapeHTML(str) {
         if (!str) return '';
         return str.toString().replace(/[&<>'"]/g, 
-            tag => ({
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                "'": '&#39;',
-                '"': '&quot;'
-            }[tag] || tag)
+            tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
         );
     }
+    
+    // Initial fetch triggers render
 });

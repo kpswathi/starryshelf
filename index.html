@@ -24,13 +24,58 @@
         </header>
 
         <section class="list-section">
-            <div class="filters">
-                <button class="filter-btn active" data-filter="all">All</button>
-                <button class="filter-btn" data-filter="active">Active</button>
-                <button class="filter-btn" data-filter="completed">Completed</button>
+            <nav class="tabs-nav">
+                <button class="tab-btn active" data-tab="Books">Books</button>
+                <button class="tab-btn" data-tab="Manga">Manga</button>
+                <button class="tab-btn" data-tab="Light Novels">Light Novels</button>
+                <button class="tab-btn" data-tab="Shows">Shows</button>
+                <button class="tab-btn" data-tab="Podcasts">Podcasts</button>
+                <button class="tab-btn" data-tab="Status">Status</button>
+                <button class="tab-btn" data-tab="Stats">Stats</button>
+            </nav>
+
+            <div class="controls-bar" id="controls-bar">
+                <select id="sort-select">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="year-desc">Year (New to Old)</option>
+                    <option value="year-asc">Year (Old to New)</option>
+                </select>
+                
+                <select id="filter-status-select">
+                    <option value="all">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="completed">Completed</option>
+                </select>
+
+                <select id="filter-category-select" style="display:none;">
+                    <option value="all">All Categories</option>
+                    <option value="Books">Books</option>
+                    <option value="Manga">Manga</option>
+                    <option value="Light Novels">Light Novels</option>
+                    <option value="Anime">Anime</option>
+                    <option value="TV Shows">TV Shows</option>
+                    <option value="Podcasts">Podcasts</option>
+                </select>
             </div>
+
             <div id="items-list" class="items-grid">
                 <!-- Items will be injected here -->
+            </div>
+
+            <div id="stats-view" style="display: none;">
+                <div class="stats-card">
+                    <h3>Progress Over Time</h3>
+                    <div style="position: relative; height:300px; width:100%">
+                        <canvas id="progressChart"></canvas>
+                    </div>
+                </div>
+                <div class="stats-card">
+                    <h3>Activity Heatmap</h3>
+                    <div class="heatmap-container">
+                        <div id="heatmap" class="heatmap-grid"></div>
+                    </div>
+                </div>
             </div>
         </section>
     </div>
@@ -49,17 +94,19 @@
 
                 <div class="form-group row">
                     <select id="item-type" required>
-                        <option value="" disabled selected>Select Type</option>
-                        <option value="Anime">Anime</option>
+                        <option value="" disabled selected>Select Category</option>
+                        <option value="Books">Books</option>
                         <option value="Manga">Manga</option>
-                        <option value="Light Novel">Light Novel</option>
-                        <option value="Book">Book</option>
+                        <option value="Light Novels">Light Novels</option>
+                        <option value="Anime">Anime</option>
+                        <option value="TV Shows">TV Shows</option>
+                        <option value="Podcasts">Podcasts</option>
                     </select>
                 </div>
 
                 <div class="form-group row">
                     <select id="item-month" required>
-                        <option value="" disabled selected>Month</option>
+                        <option value="" disabled selected>Start Month</option>
                         <option value="Jan">Jan</option>
                         <option value="Feb">Feb</option>
                         <option value="Mar">Mar</option>
@@ -73,8 +120,7 @@
                         <option value="Nov">Nov</option>
                         <option value="Dec">Dec</option>
                     </select>
-                    <input type="number" id="item-year" placeholder="Year" min="1800" max="2100" autocomplete="off"
-                        required>
+                    <input type="number" id="item-year" placeholder="Start Year" min="1800" max="2100" autocomplete="off" required>
                 </div>
 
                 <div class="form-group">
@@ -82,14 +128,38 @@
                 </div>
 
                 <div class="form-group">
-                    <label id="progress-label"
-                        style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 0.3rem; display: block; padding-left: 0.2rem;">Progress</label>
+                    <label id="progress-label" style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 0.3rem; display: block; padding-left: 0.2rem;">Progress</label>
                     <input type="number" id="item-progress" placeholder="0" min="0" autocomplete="off" required>
                 </div>
 
+                <div class="form-group row">
+                    <div style="flex: 1;">
+                        <label style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 0.3rem; display: block; padding-left: 0.2rem;">Time Taken</label>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <input type="number" id="item-duration-val" placeholder="Duration" min="1" autocomplete="off">
+                            <select id="item-duration-unit">
+                                <option value="days">Days</option>
+                                <option value="weeks">Weeks</option>
+                                <option value="months">Months</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group rating-group">
+                    <label style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 0.3rem; display: block; padding-left: 0.2rem;">Rating</label>
+                    <div class="star-rating" id="star-rating">
+                        <span data-value="1">&#9733;</span>
+                        <span data-value="2">&#9733;</span>
+                        <span data-value="3">&#9733;</span>
+                        <span data-value="4">&#9733;</span>
+                        <span data-value="5">&#9733;</span>
+                    </div>
+                    <input type="hidden" id="item-rating" value="0">
+                </div>
+
                 <div class="form-group" id="status-group" style="display: none;">
-                    <label
-                        style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 0.3rem; display: block; padding-left: 0.2rem;">Status</label>
+                    <label style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 0.3rem; display: block; padding-left: 0.2rem;">Status</label>
                     <select id="item-status">
                         <option value="false">Active</option>
                         <option value="true">Completed</option>
@@ -103,8 +173,12 @@
         </div>
     </div>
 
+    <!-- Firebase Scripts -->
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
+    <!-- Chart.js for stats -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- App Logic -->
     <script src="app.js"></script>
 </body>
 
