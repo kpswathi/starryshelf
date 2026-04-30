@@ -13,7 +13,7 @@ const db = firebase.firestore();
 const itemsCollection = db.collection('trackerItems');
 
 let items = [];
-let currentTab = 'Books';
+let currentTab = 'All';
 let chartInstance = null;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const monthSelect = document.getElementById('item-month');
     const yearInput = document.getElementById('item-year');
     const imageInput = document.getElementById('item-image');
+    const fetchStatus = document.getElementById('fetch-status');
     const progressInput = document.getElementById('item-progress');
     const durationValInput = document.getElementById('item-duration-val');
     const durationUnitSelect = document.getElementById('item-duration-unit');
@@ -80,6 +81,83 @@ document.addEventListener('DOMContentLoaded', () => {
     typeSelect.addEventListener('change', () => {
         progressLabelObj.textContent = getProgressLabel(typeSelect.value);
     });
+
+    // Debounce helper
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    async function fetchCoverImage() {
+        const title = titleInput.value.trim();
+        const type = typeSelect.value;
+        
+        if (!title || !type) return;
+        if (imageInput.value && imageInput.value.startsWith('http')) return; // Don't override manual input
+
+        fetchStatus.textContent = 'Fetching...';
+        
+        try {
+            let imageUrl = '';
+            
+            if (type === 'Anime') {
+                const res = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(title)}&limit=1`);
+                const data = await res.json();
+                if (data.data && data.data.length > 0) imageUrl = data.data[0].images.jpg.image_url;
+            } 
+            else if (type === 'Manga') {
+                const res = await fetch(`https://api.jikan.moe/v4/manga?q=${encodeURIComponent(title)}&limit=1`);
+                const data = await res.json();
+                if (data.data && data.data.length > 0) imageUrl = data.data[0].images.jpg.image_url;
+            }
+            else if (type === 'Books' || type === 'Light Novels') {
+                const res = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(title)}&limit=1`);
+                const data = await res.json();
+                if (data.docs && data.docs.length > 0 && data.docs[0].cover_i) {
+                    imageUrl = `https://covers.openlibrary.org/b/id/${data.docs[0].cover_i}-L.jpg`;
+                }
+            }
+            else if (type === 'TV Shows') {
+                const res = await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(title)}`);
+                const data = await res.json();
+                if (data && data.length > 0 && data[0].show.image) {
+                    imageUrl = data[0].show.image.original || data[0].show.image.medium;
+                }
+            }
+            else if (type === 'Podcasts') {
+                // Using iTunes Search API since it is free/public. ListenNotes requires a paid API Key.
+                const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(title)}&entity=podcast&limit=1`);
+                const data = await res.json();
+                if (data.results && data.results.length > 0) {
+                    imageUrl = data.results[0].artworkUrl600 || data.results[0].artworkUrl100;
+                }
+            }
+            
+            if (imageUrl) {
+                imageInput.value = imageUrl;
+                fetchStatus.textContent = 'Found!';
+            } else {
+                fetchStatus.textContent = 'Not found';
+            }
+            setTimeout(() => fetchStatus.textContent = '', 2500);
+        } catch (e) {
+            console.error('Error fetching image:', e);
+            fetchStatus.textContent = 'Error';
+            setTimeout(() => fetchStatus.textContent = '', 2500);
+        }
+    }
+
+    const debouncedFetch = debounce(fetchCoverImage, 800);
+
+    titleInput.addEventListener('input', debouncedFetch);
+    typeSelect.addEventListener('change', debouncedFetch);
 
     // Star rating logic
     stars.forEach(star => {
@@ -184,19 +262,14 @@ document.addEventListener('DOMContentLoaded', () => {
         
         let filteredItems = [...items];
         
-        // Tab Filtering
+        const statusVal = filterStatusSelect.value;
+        const sortVal = sortSelect.value;
+
+        // Category filter (Tabs)
         if (currentTab === 'Shows') {
             filteredItems = filteredItems.filter(i => i.type === 'Anime' || i.type === 'TV Shows');
-        } else if (currentTab !== 'Status' && currentTab !== 'Stats' && currentTab !== 'all') {
+        } else if (currentTab !== 'Status' && currentTab !== 'Stats' && currentTab !== 'All') {
             filteredItems = filteredItems.filter(i => i.type === currentTab);
-        }
-
-        // Status filter from controls
-        const statusVal = filterStatusSelect.value;
-        if (statusVal === 'active') {
-            filteredItems = filteredItems.filter(i => !i.completed);
-        } else if (statusVal === 'completed') {
-            filteredItems = filteredItems.filter(i => i.completed);
         }
 
         // Category filter from controls (only active in Status tab usually)
@@ -207,17 +280,36 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // Status filter
+        if (statusVal === 'active') {
+            filteredItems = filteredItems.filter(i => !i.completed);
+        } else if (statusVal === 'completed') {
+            filteredItems = filteredItems.filter(i => i.completed);
+        }
+
         // Sorting
-        const sortVal = sortSelect.value;
+        const monthMap = { 'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12 };
+        
         if (sortVal === 'newest') {
-            filteredItems.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            filteredItems.sort((a, b) => {
+                const yearDiff = (b.year || 0) - (a.year || 0);
+                if (yearDiff !== 0) return yearDiff;
+                return (monthMap[b.month] || 0) - (monthMap[a.month] || 0);
+            });
         } else if (sortVal === 'oldest') {
-            filteredItems.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+            filteredItems.sort((a, b) => {
+                const yearDiff = (a.year || 0) - (b.year || 0);
+                if (yearDiff !== 0) return yearDiff;
+                return (monthMap[a.month] || 0) - (monthMap[b.month] || 0);
+            });
         } else if (sortVal === 'year-desc') {
             filteredItems.sort((a, b) => (b.year || 0) - (a.year || 0));
         } else if (sortVal === 'year-asc') {
             filteredItems.sort((a, b) => (a.year || 0) - (b.year || 0));
         }
+
+        console.log(`Filters - Category: ${currentTab}, Status: ${statusVal}, Sort: ${sortVal}`);
+        console.log('Filtered Results:', filteredItems);
 
         if (filteredItems.length === 0) {
             itemsList.innerHTML = `
