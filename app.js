@@ -583,6 +583,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 cell.setAttribute('data-level', level);
                 cell.title = `${t.label} ${t.year}: ${t.progress} progress`;
+                
+                if (t.progress > 0) {
+                    cell.textContent = t.progress;
+                }
+                
+                if (t.progress === maxProgress && maxProgress > 1) {
+                    cell.classList.add('peak-month');
+                }
 
                 const label = document.createElement('div');
                 label.className = 'heatmap-label';

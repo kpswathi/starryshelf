@@ -504,8 +504,9 @@ input:focus, select:focus {
 .heatmap-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 15px;
+    gap: 18px;
     justify-content: flex-start;
+    margin-bottom: 1.5rem;
 }
 .heatmap-month-container {
     display: flex;
@@ -514,24 +515,51 @@ input:focus, select:focus {
     gap: 8px;
 }
 .heatmap-cell {
-    width: 36px;
-    height: 36px;
+    width: 45px;
+    height: 45px;
     border-radius: 8px;
-    background: rgba(255,255,255,0.05);
+    background: rgba(255,255,255,0.03);
     cursor: help;
-    transition: transform 0.2s;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 .heatmap-cell:hover {
     transform: scale(1.1);
 }
 .heatmap-label {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     color: var(--text-muted);
 }
-.heatmap-cell[data-level="1"] { background: rgba(59, 130, 246, 0.3); }
-.heatmap-cell[data-level="2"] { background: rgba(59, 130, 246, 0.6); }
-.heatmap-cell[data-level="3"] { background: rgba(59, 130, 246, 0.8); }
-.heatmap-cell[data-level="4"] { background: rgba(59, 130, 246, 1); box-shadow: 0 0 5px var(--primary-glow); }
+.heatmap-cell[data-level="0"] { background: rgba(255,255,255,0.03); color: transparent; }
+.heatmap-cell[data-level="1"] { background: #1e3a8a; }
+.heatmap-cell[data-level="2"] { background: #2563eb; }
+.heatmap-cell[data-level="3"] { background: #3b82f6; }
+.heatmap-cell[data-level="4"] { background: #60a5fa; box-shadow: 0 0 12px #60a5fa; }
+.heatmap-cell.peak-month { border: 2px solid #fff; box-shadow: 0 0 15px #fff; }
+
+.heatmap-legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    justify-content: flex-end;
+}
+.heatmap-legend .heatmap-cell {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    cursor: default;
+}
+.heatmap-legend .heatmap-cell:hover {
+    transform: none;
+}
 
 @media (max-width: 600px) {
     .header-content {
