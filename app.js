@@ -529,35 +529,69 @@ document.addEventListener('DOMContentLoaded', () => {
         const heatmap = document.getElementById('heatmap');
         if (heatmap) {
             heatmap.innerHTML = '';
-            const cells = 365;
-            const activityCount = new Array(cells).fill(0);
-            const now = Date.now();
-            const dayMs = 1000 * 60 * 60 * 24;
             
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const fullMonthNames = {
+                'Jan': 'January', 'Feb': 'February', 'Mar': 'March', 'Apr': 'April',
+                'May': 'May', 'Jun': 'June', 'Jul': 'July', 'Aug': 'August',
+                'Sep': 'September', 'Oct': 'October', 'Nov': 'November', 'Dec': 'December'
+            };
+            
+            const now = new Date();
+            const currentM = now.getMonth();
+            const currentY = now.getFullYear();
+
+            const timeline = [];
+            for (let i = 11; i >= 0; i--) {
+                let m = currentM - i;
+                let y = currentY;
+                if (m < 0) {
+                    m += 12;
+                    y -= 1;
+                }
+                timeline.push({ month: monthNames[m], year: y, label: fullMonthNames[monthNames[m]], progress: 0 });
+            }
+
             items.forEach(item => {
-                if (!item.createdAt) return;
-                const diffDays = Math.floor((now - item.createdAt) / dayMs);
-                if (diffDays >= 0 && diffDays < cells) {
-                    const index = cells - 1 - diffDays;
-                    // using progress to determine activity intensity
-                    activityCount[index] += (item.progress || 1);
+                if (!item.month || !item.year) return;
+                const tItem = timeline.find(t => t.month === item.month && t.year === parseInt(item.year));
+                if (tItem) {
+                    tItem.progress += (item.progress || 0);
                 }
             });
 
-            for (let i = 0; i < cells; i++) {
+            console.log('Grouped Monthly Heatmap Data:', timeline);
+
+            let maxProgress = Math.max(...timeline.map(t => t.progress));
+            if (maxProgress === 0) maxProgress = 1;
+
+            timeline.forEach(t => {
+                const container = document.createElement('div');
+                container.className = 'heatmap-month-container';
+
                 const cell = document.createElement('div');
                 cell.className = 'heatmap-cell';
+                
+                const intensity = t.progress / maxProgress;
                 let level = 0;
-                const count = activityCount[i];
-                if (count > 0 && count <= 5) level = 1;
-                else if (count > 5 && count <= 20) level = 2;
-                else if (count > 20 && count <= 50) level = 3;
-                else if (count > 50) level = 4;
+                if (t.progress > 0) {
+                    if (intensity <= 0.25) level = 1;
+                    else if (intensity <= 0.5) level = 2;
+                    else if (intensity <= 0.75) level = 3;
+                    else level = 4;
+                }
                 
                 cell.setAttribute('data-level', level);
-                if (count > 0) cell.title = `Activity level: ${count}`;
-                heatmap.appendChild(cell);
-            }
+                cell.title = `${t.label} ${t.year}: ${t.progress} progress`;
+
+                const label = document.createElement('div');
+                label.className = 'heatmap-label';
+                label.textContent = t.month;
+
+                container.appendChild(cell);
+                container.appendChild(label);
+                heatmap.appendChild(container);
+            });
         }
     }
 
