@@ -186,7 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
         progressLabelObj.textContent = 'Progress';
         ratingInput.value = 0;
         updateStarsUI(0);
-        modal.classList.add('show');
+        modal.style.display = 'flex';
     }
 
     function openModalForEdit(id) {

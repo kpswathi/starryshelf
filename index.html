@@ -81,89 +81,90 @@
             <span class="close-btn" id="close-modal">&times;</span>
             <h2 id="modal-title">Add New Item</h2>
             <form id="item-form">
-                <input type="hidden" id="item-id">
+                <div class="form-body">
+                    <input type="hidden" id="item-id">
+                    
+                    <div class="form-group">
+                        <input type="text" id="item-title" placeholder="Title" autocomplete="off" required>
+                    </div>
 
-                <div class="form-group">
-                    <input type="text" id="item-title" placeholder="Name" autocomplete="off" required>
-                </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <select id="item-type" required>
+                                <option value="Books">Books</option>
+                                <option value="Manga">Manga</option>
+                                <option value="Light Novels">Light Novels</option>
+                                <option value="Anime">Anime</option>
+                                <option value="TV Shows">TV Shows</option>
+                                <option value="Podcasts">Podcasts</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <select id="item-month" required>
+                                <option value="Jan">Jan</option>
+                                <option value="Feb">Feb</option>
+                                <option value="Mar">Mar</option>
+                                <option value="Apr">Apr</option>
+                                <option value="May">May</option>
+                                <option value="Jun">Jun</option>
+                                <option value="Jul">Jul</option>
+                                <option value="Aug">Aug</option>
+                                <option value="Sep">Sep</option>
+                                <option value="Oct">Oct</option>
+                                <option value="Nov">Nov</option>
+                                <option value="Dec">Dec</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <input type="number" id="item-year" placeholder="Start Year" min="1800" max="2100" autocomplete="off" required>
+                        </div>
+                    </div>
 
-                <div class="form-group row">
-                    <select id="item-type" required>
-                        <option value="" disabled selected>Select Category</option>
-                        <option value="Books">Books</option>
-                        <option value="Manga">Manga</option>
-                        <option value="Light Novels">Light Novels</option>
-                        <option value="Anime">Anime</option>
-                        <option value="TV Shows">TV Shows</option>
-                        <option value="Podcasts">Podcasts</option>
-                    </select>
-                </div>
+                    <div class="form-group" style="position: relative;">
+                        <input type="url" id="item-image" placeholder="Cover Image URL (Auto-fetches)" autocomplete="off">
+                        <span id="fetch-status" style="position: absolute; right: 15px; top: 16px; font-size: 0.85rem; color: var(--primary); font-weight: 600;"></span>
+                    </div>
 
-                <div class="form-group row">
-                    <select id="item-month" required>
-                        <option value="" disabled selected>Start Month</option>
-                        <option value="Jan">Jan</option>
-                        <option value="Feb">Feb</option>
-                        <option value="Mar">Mar</option>
-                        <option value="Apr">Apr</option>
-                        <option value="May">May</option>
-                        <option value="Jun">Jun</option>
-                        <option value="Jul">Jul</option>
-                        <option value="Aug">Aug</option>
-                        <option value="Sep">Sep</option>
-                        <option value="Oct">Oct</option>
-                        <option value="Nov">Nov</option>
-                        <option value="Dec">Dec</option>
-                    </select>
-                    <input type="number" id="item-year" placeholder="Start Year" min="1800" max="2100" autocomplete="off" required>
-                </div>
+                    <div class="form-group">
+                        <label id="progress-label" style="margin-bottom: 0.5rem; display: block; color: var(--text-muted); font-size: 0.85rem;">Progress</label>
+                        <input type="number" id="item-progress" placeholder="0" min="0" autocomplete="off">
+                    </div>
 
-                <div class="form-group" style="position: relative;">
-                    <input type="url" id="item-image" placeholder="Cover Image URL (Auto-fetches)" autocomplete="off">
-                    <span id="fetch-status" style="position: absolute; right: 15px; top: 16px; font-size: 0.85rem; color: var(--primary); font-weight: 600;"></span>
-                </div>
-
-                <div class="form-group">
-                    <label id="progress-label" style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 0.3rem; display: block; padding-left: 0.2rem;">Progress</label>
-                    <input type="number" id="item-progress" placeholder="0" min="0" autocomplete="off" required>
-                </div>
-
-                <div class="form-group row">
-                    <div style="flex: 1;">
-                        <label style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 0.3rem; display: block; padding-left: 0.2rem;">Time Taken</label>
-                        <div style="display: flex; gap: 0.5rem;">
-                            <input type="number" id="item-duration-val" placeholder="Duration" min="1" autocomplete="off">
+                    <div class="form-group">
+                        <label style="margin-bottom: 0.5rem; display: block; color: var(--text-muted); font-size: 0.85rem;">Time Taken</label>
+                        <div class="form-row">
+                            <input type="number" id="item-duration-val" placeholder="Value" min="1" autocomplete="off">
                             <select id="item-duration-unit">
-                                <option value="days">Days</option>
-                                <option value="weeks">Weeks</option>
-                                <option value="months">Months</option>
+                                <option value="Days">Days</option>
+                                <option value="Weeks">Weeks</option>
+                                <option value="Months">Months</option>
                             </select>
                         </div>
                     </div>
-                </div>
 
-                <div class="form-group rating-group">
-                    <label style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 0.3rem; display: block; padding-left: 0.2rem;">Rating</label>
-                    <div class="star-rating" id="star-rating">
-                        <span data-value="1">&#9733;</span>
-                        <span data-value="2">&#9733;</span>
-                        <span data-value="3">&#9733;</span>
-                        <span data-value="4">&#9733;</span>
-                        <span data-value="5">&#9733;</span>
+                    <div class="form-group">
+                        <label style="margin-bottom: 0.5rem; display: block; color: var(--text-muted); font-size: 0.85rem;">Rating</label>
+                        <div class="star-rating" id="modal-rating">
+                            <i class="fa-solid fa-star" data-val="1"></i>
+                            <i class="fa-solid fa-star" data-val="2"></i>
+                            <i class="fa-solid fa-star" data-val="3"></i>
+                            <i class="fa-solid fa-star" data-val="4"></i>
+                            <i class="fa-solid fa-star" data-val="5"></i>
+                        </div>
+                        <input type="hidden" id="item-rating" value="0">
                     </div>
-                    <input type="hidden" id="item-rating" value="0">
-                </div>
 
-                <div class="form-group" id="status-group" style="display: none;">
-                    <label style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 0.3rem; display: block; padding-left: 0.2rem;">Status</label>
-                    <select id="item-status">
-                        <option value="false">Active</option>
-                        <option value="true">Completed</option>
-                    </select>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="item-status">
+                            <option value="false">Active (Reading/Watching)</option>
+                            <option value="true">Completed</option>
+                        </select>
+                    </div>
                 </div>
-
-                <div class="form-group row" style="justify-content: flex-end; margin-top: 1.5rem;">
-                    <button type="submit" class="btn-primary">Save Item</button>
+                
+                <div class="form-footer">
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Save Item</button>
                 </div>
             </form>
         </div>

@@ -170,35 +170,75 @@ input:focus, select:focus {
     background: linear-gradient(135deg, var(--primary-hover), #3b82f6);
 }
 
-/* Modal Styling */
+/* Modal */
 .modal {
-    display: none; 
-    position: fixed; 
-    z-index: 100; 
+    display: none;
+    position: fixed;
+    z-index: 1000;
     left: 0;
     top: 0;
-    width: 100%; 
-    height: 100%; 
-    background-color: rgba(8, 11, 20, 0.8); 
-    backdrop-filter: blur(8px);
-}
-
-.modal.show {
-    display: flex;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0,0,0,0.8);
+    backdrop-filter: blur(4px);
     align-items: center;
     justify-content: center;
-    animation: fadeIn 0.3s ease;
 }
 
 .modal-content {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
-    padding: 2.5rem 2rem;
+    background: var(--surface);
+    padding: 1.5rem 2rem;
+    border-radius: 12px;
     width: 90%;
-    max-width: 450px;
+    max-width: 500px;
     position: relative;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+#modal-title {
+    margin-top: 0;
+    margin-bottom: 1.25rem;
+    flex-shrink: 0;
+}
+
+#item-form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+}
+
+.form-body {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 10px;
+    scroll-behavior: smooth;
+    margin-bottom: 1rem;
+}
+
+/* Custom Scrollbar for form body */
+.form-body::-webkit-scrollbar {
+    width: 6px;
+}
+.form-body::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.1);
+    border-radius: 4px;
+}
+.form-body::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.2);
+    border-radius: 4px;
+}
+.form-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+.form-footer {
+    flex-shrink: 0;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255,255,255,0.05);
 }
 
 .modal-content h2 {
