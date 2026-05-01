@@ -210,11 +210,12 @@ document.addEventListener('DOMContentLoaded', () => {
         
         statusGroup.style.display = 'block';
         modalTitle.textContent = 'Edit Item';
-        modal.classList.add('show');
+        modal.style.display = 'flex';
     }
 
     function closeModal() {
-        modal.classList.remove('show');
+        modal.style.display = 'none';
+        form.reset();
     }
 
     addNewBtn.addEventListener('click', openModalForAdd);
