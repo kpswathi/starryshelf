@@ -477,55 +477,141 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderStats() {
         const ctx = document.getElementById('progressChart');
+        if (!ctx) return;
         
-        const progressByMonth = {};
-        items.forEach(item => {
-            if (!item.month || !item.year) return;
-            const key = `${item.month} ${item.year}`;
-            progressByMonth[key] = (progressByMonth[key] || 0) + (item.progress || 0);
-        });
-
-        const monthsOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const sortedKeys = Object.keys(progressByMonth).sort((a, b) => {
-            const [mA, yA] = a.split(' ');
-            const [mB, yB] = b.split(' ');
-            if (yA !== yB) return parseInt(yA) - parseInt(yB);
-            return monthsOrder.indexOf(mA) - monthsOrder.indexOf(mB);
-        });
-
-        const labels = sortedKeys;
-        const data = sortedKeys.map(k => progressByMonth[k]);
-
-        if (chartInstance) chartInstance.destroy();
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const fullMonthNames = {
+            'Jan': 'January', 'Feb': 'February', 'Mar': 'March', 'Apr': 'April',
+            'May': 'May', 'Jun': 'June', 'Jul': 'July', 'Aug': 'August',
+            'Sep': 'September', 'Oct': 'October', 'Nov': 'November', 'Dec': 'December'
+        };
         
-        if(ctx) {
-            chartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels.length ? labels : ['No Data'],
-                    datasets: [{
-                        label: 'Total Progress Activity',
-                        data: data.length ? data : [0],
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                        borderWidth: 2,
-                        tension: 0.4,
-                        fill: true
-                    }]
+        const now = new Date();
+        const currentM = now.getMonth();
+        const currentY = now.getFullYear();
+
+        const timeline = [];
+        for (let i = 11; i >= 0; i--) {
+            let m = currentM - i;
+            let y = currentY;
+            if (m < 0) {
+                m += 12;
+                y -= 1;
+            }
+            timeline.push({ 
+                month: monthNames[m], 
+                year: y, 
+                label: fullMonthNames[monthNames[m]],
+                categories: {
+                    'Books': 0, 'Manga': 0, 'Light Novels': 0, 
+                    'Anime': 0, 'TV Shows': 0, 'Podcasts': 0
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { labels: { color: '#e2e8f0' } }
-                    },
-                    scales: {
-                        x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                        y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } }
-                    }
-                }
+                totalScore: 0
             });
         }
+
+        const multipliers = {
+            'Books': 1, 'Manga': 200, 'Light Novels': 250,
+            'Anime': 25, 'TV Shows': 45, 'Podcasts': 45
+        };
+
+        items.forEach(item => {
+            if (!item.month || !item.year || !item.type) return;
+            const tItem = timeline.find(t => t.month === item.month && t.year === parseInt(item.year));
+            if (tItem && tItem.categories[item.type] !== undefined) {
+                const rawProgress = (parseInt(item.progress) || 0);
+                const score = rawProgress * (multipliers[item.type] || 1);
+                tItem.categories[item.type] += score;
+                tItem.totalScore += score;
+            }
+        });
+
+        let mostActive = timeline[0];
+        let leastActive = timeline[0];
+        let totalActivity = 0;
+
+        timeline.forEach(t => {
+            if (t.totalScore > mostActive.totalScore) mostActive = t;
+            if (t.totalScore < leastActive.totalScore) leastActive = t;
+            totalActivity += t.totalScore;
+        });
+
+        const avgActivity = Math.round(totalActivity / 12);
+
+        let topCategoryMostActive = 'None';
+        let maxCatScore = 0;
+        for (const [cat, score] of Object.entries(mostActive.categories)) {
+            if (score > maxCatScore) {
+                maxCatScore = score;
+                topCategoryMostActive = cat;
+            }
+        }
+
+        const insightsContainer = document.getElementById('summary-insights');
+        if (insightsContainer) {
+            insightsContainer.innerHTML = `
+                <div class="insight-card">
+                    <div class="insight-title">Most Active Month</div>
+                    <div class="insight-value">${mostActive.label} ${mostActive.year}</div>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-title">Least Active Month</div>
+                    <div class="insight-value">${leastActive.label} ${leastActive.year}</div>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-title">Avg Monthly Activity</div>
+                    <div class="insight-value">${avgActivity} units</div>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-title">Top Activity (Best Month)</div>
+                    <div class="insight-value">${topCategoryMostActive}</div>
+                </div>
+            `;
+        }
+
+        if (chartInstance) chartInstance.destroy();
+
+        const labels = timeline.map(t => `${t.month} ${t.year}`);
+        
+        const datasets = [
+            { label: 'Books', data: timeline.map(t => t.categories['Books']), borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', tension: 0.3, fill: true },
+            { label: 'Manga', data: timeline.map(t => t.categories['Manga']), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', tension: 0.3, fill: true },
+            { label: 'Light Novels', data: timeline.map(t => t.categories['Light Novels']), borderColor: '#8b5cf6', backgroundColor: 'rgba(139, 92, 246, 0.1)', tension: 0.3, fill: true },
+            { label: 'Anime', data: timeline.map(t => t.categories['Anime']), borderColor: '#ec4899', backgroundColor: 'rgba(236, 72, 153, 0.1)', tension: 0.3, fill: true },
+            { label: 'TV Shows', data: timeline.map(t => t.categories['TV Shows']), borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.3, fill: true },
+            { label: 'Podcasts', data: timeline.map(t => t.categories['Podcasts']), borderColor: '#f43f5e', backgroundColor: 'rgba(244, 63, 94, 0.1)', tension: 0.3, fill: true }
+        ];
+
+        chartInstance = new Chart(ctx.getContext('2d'), {
+            type: 'line',
+            data: { labels, datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { labels: { color: '#e2e8f0' } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) label += ': ';
+                                if (context.parsed.y !== null) label += context.parsed.y + ' units';
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    y: { 
+                        ticks: { color: '#94a3b8' }, 
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        title: { display: true, text: 'Normalized Progress Units', color: '#94a3b8' }
+                    }
+                }
+            }
+        });
     }
 
     function escapeHTML(str) {
