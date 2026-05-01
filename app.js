@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function getProgressLabel(type) {
         switch(type) {
             case 'Books': return 'Pages';
-            case 'Manga': 
+            case 'Manga': return 'Chapters';
             case 'Light Novels': return 'Volumes';
             case 'Anime': 
             case 'TV Shows': 
@@ -511,8 +511,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const multipliers = {
-            'Books': 1, 'Manga': 200, 'Light Novels': 250,
+            'Books': 1, 'Manga': 20, 'Light Novels': 250,
             'Anime': 25, 'TV Shows': 45, 'Podcasts': 45
+        };
+
+        const rawTotals = {
+            'Books': 0, 'Manga': 0, 'Light Novels': 0,
+            'Anime': 0, 'TV Shows': 0, 'Podcasts': 0
         };
 
         items.forEach(item => {
@@ -523,20 +528,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 const score = rawProgress * (multipliers[item.type] || 1);
                 tItem.categories[item.type] += score;
                 tItem.totalScore += score;
+                
+                rawTotals[item.type] += rawProgress;
             }
         });
 
         let mostActive = timeline[0];
         let leastActive = timeline[0];
-        let totalActivity = 0;
 
         timeline.forEach(t => {
             if (t.totalScore > mostActive.totalScore) mostActive = t;
             if (t.totalScore < leastActive.totalScore) leastActive = t;
-            totalActivity += t.totalScore;
         });
 
-        const avgActivity = Math.round(totalActivity / 12);
+        const avgBooks = Math.round(rawTotals['Books'] / 12);
+        const avgManga = Math.round(rawTotals['Manga'] / 12);
+        const avgLN = Math.round(rawTotals['Light Novels'] / 12);
+        const avgAnime = Math.round(rawTotals['Anime'] / 12);
+        const avgTV = Math.round(rawTotals['TV Shows'] / 12);
+        const avgPodcasts = Math.round(rawTotals['Podcasts'] / 12);
 
         let topCategoryMostActive = 'None';
         let maxCatScore = 0;
@@ -558,9 +568,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="insight-title">Least Active Month</div>
                     <div class="insight-value">${leastActive.label} ${leastActive.year}</div>
                 </div>
-                <div class="insight-card">
+                <div class="insight-card" style="grid-row: span 2;">
                     <div class="insight-title">Avg Monthly Activity</div>
-                    <div class="insight-value">${avgActivity} units</div>
+                    <div style="font-size: 0.9rem; font-weight: normal; line-height: 1.6; color: #cbd5e1; margin-top: 8px;">
+                        Books: <strong style="color: #fff">${avgBooks}</strong> pages<br>
+                        Manga: <strong style="color: #fff">${avgManga}</strong> chapters<br>
+                        Light Novels: <strong style="color: #fff">${avgLN}</strong> volumes<br>
+                        Anime: <strong style="color: #fff">${avgAnime}</strong> eps<br>
+                        TV Shows: <strong style="color: #fff">${avgTV}</strong> eps<br>
+                        Podcasts: <strong style="color: #fff">${avgPodcasts}</strong> eps
+                    </div>
                 </div>
                 <div class="insight-card">
                     <div class="insight-title">Top Activity (Best Month)</div>
